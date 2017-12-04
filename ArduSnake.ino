@@ -17,14 +17,17 @@ struct block {
 
 struct snake {
   struct block *chunks;
-  int length;
+  unsigned int length;
 };
 
+const unsigned char PAUSE_GRAPHIC[] PROGMEM = {0xff, 0x3, 0x1, 0x1, 0xe1, 0xa1, 0xe1, 0x1, 0xe1, 0xa1, 0xe1, 0x1, 0xe1, 0x1, 0xe1, 0x1, 0xe1, 0xa1, 0xa1, 0x1, 0xe1, 0xa1, 0xa1, 0x1, 0xe1, 0x21, 0x21, 0xc1, 0x1, 0x1, 0x3, 0xff, 0xff, 0xc0, 0x80, 0x80, 0x87, 0x80, 0x80, 0x80, 0x87, 0x80, 0x87, 0x80, 0x87, 0x84, 0x87, 0x80, 0x84, 0x84, 0x87, 0x80, 0x87, 0x84, 0x84, 0x80, 0x87, 0x84, 0x84, 0x83, 0x80, 0x80, 0xc0, 0xff};
+
 Arduboy2 arduboy;
-int length = INITIAL_LENGTH;
 struct snake snake;
 struct block food;
-int direction = RIGHT;
+unsigned int direction = RIGHT;
+bool paused = false;
+unsigned char last_input = 0x00;
 
 void setup() {
   arduboy.boot();
@@ -44,20 +47,40 @@ void loop() {
   }
   
   process_input();
-  move_snake();
-  if (snake_collided()) {
-    lose();
+
+  if (!paused) {
+    move_snake();
+    if (snake_collided()) {
+      lose();
+    }
+    if (food_collided()) {
+      eat_food();
+    }
   }
-  if (food_collided()) {
-    eat_food();
-  }
+  
   arduboy.clear();
   draw_food();
   draw_snake();
+  draw_interface();
   arduboy.display();
 }
 
 void process_input() {
+  unsigned char current_input = arduboy.buttonsState();
+  if (current_input != last_input) {
+    last_input = current_input;
+  } else {
+    return;
+  }
+  
+  if (arduboy.pressed(A_BUTTON)) {
+    paused = !paused;
+  }
+
+  if (paused) {
+    return;
+  }
+  
   if (direction != RIGHT && arduboy.pressed(LEFT_BUTTON)) {
      direction = LEFT;
   }
@@ -128,7 +151,9 @@ void eat_food() {
 }
 
 void new_food() {
-  food = {random(0, MAX_X), random(0, MAX_Y)};
+  unsigned int x = random(0, MAX_X);
+  unsigned int y = random(0, MAX_Y);
+  food = {x, y};
 }
 
 void draw_food() {
@@ -139,6 +164,16 @@ void draw_snake() {
   for (int i = 0; i < snake.length; i++) {
     struct block chunk = snake.chunks[i];
     arduboy.fillRect(chunk.x * BLOCK_WIDTH, chunk.y * BLOCK_WIDTH, BLOCK_WIDTH, BLOCK_WIDTH, WHITE);
+  }
+}
+
+void draw_interface() {
+  if (paused) {
+    char *PAUSE_SPRITE = PAUSE_GRAPHIC;
+    unsigned int x = WIDTH / 2 - 16;
+    unsigned int y = HEIGHT / 2 - 8;
+    arduboy.fillRect(x, y, 32, 16, BLACK);
+    arduboy.drawBitmap(x, y, PAUSE_SPRITE, 32, 16, WHITE);
   }
 }
 
