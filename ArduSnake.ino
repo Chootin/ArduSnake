@@ -3,21 +3,26 @@
 #define BLOCK_WIDTH 4
 #define MAX_X (WIDTH / BLOCK_WIDTH)
 #define MAX_Y (HEIGHT / BLOCK_WIDTH)
-#define MAX_SNAKE (MAX_X * MAX_Y)
+#define MAX_SNAKE 120
 #define INITIAL_LENGTH 3
 #define RIGHT 0
 #define DOWN 1
 #define LEFT 2
 #define UP 3
+#define MAX_PLAYERS 3
+#define MAX_SPEED 3
 
-struct block {
-  int x;
-  int y;
+struct Block {
+  byte x;
+  byte y;
 };
 
-struct snake {
-  struct block *chunks;
-  unsigned int length;
+struct Snake {
+  struct Block *chunks;
+  unsigned short length;
+  byte direction;
+  bool dead;
+  bool control_permitted;
 };
 
 const unsigned char TITLE_SCREEN_LEFT[] PROGMEM = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0x80, 0x80, 0x80, 0x80, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xe0, 0xe0, 0xe0, 0xf0, 0xf0, 0x70, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0, 0xe0, 0x60, 0x60, 0x60, 0xe0, 0xe0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0xc0, 0x80, 0x80, 0x80, 0x80, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0xe0, 0xf0, 0xf8, 0xfc, 0x7c, 0x3e, 0x3e, 0x1e, 0x1f, 0xf, 0xf, 0xf, 0xf, 0xf, 0x8f, 0x87, 0xe7, 0xff, 0xff, 0xff, 0x1f, 0x3, 0x3, 0x1, 0x7d, 0xfe, 0xff, 0xff, 0xbb, 0xd9, 0xd9, 0x99, 0xf9, 0xf9, 0xfb, 0xfb, 0xff, 0x7f, 0x7f, 0x3f, 0x00, 0x00, 0x00, 0x80, 0xe0, 0xff, 0xff, 0x7f, 0x7f, 0x63, 0x63, 0x63, 0x43, 0x43, 0x83, 0x83, 0x7, 0x7, 0x7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x3f, 0xff, 0xff, 0xff, 0xf0, 0x40, 0x00, 0x00, 0x00, 0x6, 0x2, 0x1, 0x81, 0x40, 0x00, 0x00, 0x18, 0xc, 0xc, 0xf, 0x3c, 0x38, 0xf0, 0xf0, 0xf0, 0xf0, 0xe0, 0xe0, 0xec, 0xe7, 0xed, 0xe0, 0xe0, 0xe0, 0xf0, 0xf0, 0xf0, 0xf0, 0xf8, 0xf8, 0xfc, 0xfe, 0xff, 0xff, 0x3f, 0xf, 0xf, 0x1e, 0x18, 0x38, 0x38, 0x30, 0x00, 0x00, 0x00, 0x81, 0xe3, 0xfe, 0xf8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1, 0x3, 0x7, 0x7, 0xf, 0x3c, 0x78, 0xf8, 0xf8, 0xf8, 0xff, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xf0, 0x18, 0x00, 0x3, 0x3, 0x7, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x1f, 0x1f, 0x7, 0x7, 0x7, 0x7, 0xf, 0x1f, 0x1f, 0x1c, 0x00, 0x00, 0x80, 0xc0, 0xe0, 0xe0, 0xf1, 0xf0, 0x78, 0x3e, 0x3f, 0x1f, 0xf, 0x3, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1, 0x3, 0x3, 0x7, 0xf, 0xf, 0x1e, 0x1e, 0x3e, 0x3f, 0x7c, 0x7c, 0xf8, 0xf0, 0xf8, 0xfc, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0x80, 0x80, 0xc0, 0xe0, 0x7c, 0x7c, 0x3f, 0x3f, 0x1f, 0x1f, 0x9f, 0x8f, 0x8f, 0x87, 0x3, 0x1, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0, 0x60, 0x70, 0xf0, 0xf8, 0xf8, 0xfc, 0xfc, 0xfc, 0x3e, 0x1e, 0xe, 0x6, 0x7, 0x7, 0xc3, 0xe3, 0xf1, 0xf0, 0x18, 0x18, 0x3c, 0x1c, 0xe, 0xe, 0xcc, 0xfc, 0xfc, 0xfc, 0xf8, 0xf9, 0x39, 0x19, 0x1f, 0xff, 0xff, 0xff, 0xf3, 0xf3, 0xf1, 0xf1, 0xf1, 0xf1, 0x18, 0x18, 0x7c, 0x7c, 0x3e, 0x3f, 0x3f, 0x1f, 0x1f, 0x13, 0x3, 0xc3, 0xc7, 0x47, 0x47, 0x46, 0x46, 0x4e, 0x7c, 0x38, 0x30, 0x00, 0x00, 0xe0, 0xf1, 0xf9, 0x7f, 0x3f, 0x3f, 0xff, 0xf8, 0xf0, 0xf0, 0xf0, 0xf0, 0xe0, 0xe0, 0xc0, 0xc1, 0xc3, 0xc3, 0x82, 0x82, 0x86, 0x84, 0x84, 0x84, 0x84, 0x84, 0x88, 0x88, 0x8, 0x8, 0x8, 0x9, 0x9, 0x9, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0xcc, 0xcc, 0xc4, 0xc4, 0xc4, 0xe4, 0xe6, 0xe2, 0xf2, 0xf3, 0xf1, 0xf1, 0xf9, 0xf8, 0xf8, 0xfc, 0xfc, 0xfc, 0xfc, 0xfc, 0xfc, 0xfc, 0x10, 0x30, 0x30, 0x21, 0x60, 0x40, 0x40, 0xc7, 0x87, 0x8f, 0x83, 0x81, 0x11, 0x1f, 0x1f, 0x3f, 0x3f, 0x7, 0x7, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x3f, 0x1f, 0x1f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x1f, 0x1f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x7f, 0x3f, 0x3f, 0x3f, 0x1f, 0x1f, 0x3, 0x3, 0x7, 0x7, 0xf, 0xf, 0x87, 0x87, 0xcf, 0x47, 0x67, 0x23, 0x21, 0x11};
@@ -26,110 +31,274 @@ const unsigned char PAUSE_GRAPHIC[] PROGMEM = {0xff, 0x3, 0x1, 0x1, 0xe1, 0xa1, 
 const unsigned char DEATH_BOX[] PROGMEM = {0xfe, 0x1, 0xf1, 0x5d, 0xcd, 0xbd, 0xcd, 0x5d, 0xf1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0xfe, 0x7, 0x8, 0x8, 0xb, 0xa, 0xa, 0xa, 0xb, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x7};
 
 Arduboy2 arduboy;
-struct snake snake;
-struct block food;
-unsigned int direction = RIGHT;
-bool paused = false, dead = false;
-bool left_held = false;
-bool up_held = false;
-bool right_held = false;
-bool down_held = false;
-bool a_held = false;
-bool b_held = false;
+struct Snake *snakes;
+struct Block food;
+bool paused = false;
+bool left_held = false, up_held = false, right_held = false, down_held = false, a_held = false, b_held = false;
+byte number_of_players = 1;
+byte game_speed = 3;
 
 void setup() {
   arduboy.boot();
   arduboy.setFrameRate(20);
   arduboy.initRandomSeed();
-  snake.chunks = new struct block[255];
-  reset();
-  for (int i = 0; i < snake.length; i++) {
-    snake.chunks[i] = {0, 0};
+  title_screen();
+  switch (game_speed) {
+    case 1:
+      arduboy.setFrameRate(10);
+      break;
+    case 2:
+      arduboy.setFrameRate(15);
+      break;
+    case 3:
+      arduboy.setFrameRate(20);
+      break;
   }
-  new_food();
+  snakes = (struct Snake *) malloc(sizeof(struct Snake) * number_of_players);
+  for (int i = 0; i < number_of_players; i++) {
+    struct Block *chunks = (struct Block *) malloc(sizeof(struct Block) * MAX_SNAKE);
+    struct Snake snake = {chunks, INITIAL_LENGTH, RIGHT, false, true};
+    snakes[i] = snake;
+  }
+  reset();
+}
 
+void title_screen() {
+  int current_option = 0;
   arduboy.clear();
   char *title_screen = TITLE_SCREEN_LEFT;
   arduboy.drawBitmap(0, 0, title_screen, 64, 64, WHITE);
   title_screen = TITLE_SCREEN_RIGHT;
   arduboy.drawBitmap(64, 0, title_screen, 64, 64, WHITE);
-  arduboy.display();
 
+  bool play_selected = false;
   while (true) {
+    if (!arduboy.nextFrame()) {
+      continue;
+    }
     if (check_button(B_BUTTON, &b_held)) {
+      switch (current_option) {
+        case 0:
+          play_selected = true;
+          break;
+        case 1:
+          number_of_players++;
+          if (number_of_players > MAX_PLAYERS) {
+            number_of_players = 1;
+          }
+          break;
+        case 2:
+          game_speed++;
+          if (game_speed > MAX_SPEED) {
+            game_speed = 1;
+          }
+          break;
+      }
+    }
+
+    if (check_button(DOWN_BUTTON, &down_held)) {
+      current_option = (current_option + 1) % 3;
+    }
+
+    if (check_button(UP_BUTTON, &up_held)) {
+      current_option--;
+      if (current_option < 0) {
+        current_option = 2;
+      }
+    }
+
+    if (play_selected) {
       break;
     }
+
+    arduboy.setCursor(79, 18);
+    if (current_option == 0) {
+      arduboy.print("> ");
+    } else {
+      arduboy.print("  ");
+    }
+    arduboy.print("Play!");
+    arduboy.setCursor(79, 27);
+    if (current_option == 1) {
+      arduboy.print("> ");
+    } else {
+      arduboy.print("  ");
+    }
+    arduboy.print("Ps:");
+    arduboy.setCursor(120, 27);
+    arduboy.print(number_of_players);
+    arduboy.setCursor(79, 36);
+    if (current_option == 2) {
+      arduboy.print("> ");
+    } else {
+      arduboy.print("  ");
+    }
+    arduboy.print("Spd:");
+    arduboy.setCursor(120, 36);
+    arduboy.print(game_speed);
+    arduboy.display();
   }
 }
 
 void loop() {
+  process_input();
   if (!arduboy.nextFrame()) {
     return;
   }
-  
-  process_input();
 
-  if (!paused && !dead) {
-    move_snake();
-    if (snake_collided()) {
-      lose();
+  if (!paused && !all_players_dead()) {
+    for (int i = 0; i < number_of_players; i++) {
+      move_snake(i);
     }
-    if (food_collided()) {
-      eat_food();
+
+    for (int i = 0; i < number_of_players; i++) {
+      if (snake_collided(i)) {
+        snakes[i].dead = true;
+      } else if (food_collided(i)) {
+        eat_food(i);
+      }
     }
   }
-  
+
   arduboy.clear();
   draw_food();
-  draw_snake();
+  draw_snakes();
   draw_interface();
   arduboy.display();
 }
 
-void process_input() {
-  if (check_button(A_BUTTON, &a_held)) {
+bool all_players_dead() {
+  for (int i = 0; i < number_of_players; i++) {
+    if (!snakes[i].dead) {
+      return false;
+    }
   }
-  
-  if (check_button(B_BUTTON, &b_held)) {
-      if (dead) {
-        reset();
-      } else {
-        paused = !paused;
-      }
+  return true;
+}
+
+void process_input() {
+  if (number_of_players == 1) {
+    single_player_controls();
+  } else {
+    multiplayer_controls();
+  }
+}
+
+void multiplayer_controls() {
+  //Snake 1
+  if (check_button(A_BUTTON, &a_held)) {
+    if (!snakes[0].dead) {
+      rotate_snake(0, false);
+    }
   }
 
-  if (paused || dead) {
+  if (check_button(B_BUTTON, &b_held)) {
+    if (all_players_dead()) {
+      reset();
+    } else if (!snakes[0].dead) {
+      rotate_snake(0, true);
+    }
+  }
+
+  if (paused || all_players_dead()) {
     return;
   }
-  
+
+  //Snake 2
   if (check_button(LEFT_BUTTON, &left_held)) {
-    if (!(paused || dead)) {
-      if (direction != RIGHT) {
-         direction = LEFT;
-      }
+    if (!snakes[1].dead) {
+      rotate_snake(1, false);
     }
   }
-  
+
   if (check_button(UP_BUTTON, &up_held)) {
-    if (!(paused || dead)) {
-      if (direction != DOWN) {
-         direction = UP;
-      }
+    if (!snakes[1].dead) {
+      rotate_snake(1, true);
     }
   }
-  
+
+  //Snake 3
   if (check_button(RIGHT_BUTTON, &right_held)) {
-    if (!(paused || dead)) {
-      if (direction != LEFT) {
-         direction = RIGHT;
-      }
+    if (!snakes[2].dead) {
+      rotate_snake(2, false);
     }
   }
-  
+
   if (check_button(DOWN_BUTTON, &down_held)) {
-    if (!(paused || dead)) {
-      if (direction != UP) {
-         direction = DOWN;
+    if (!snakes[2].dead) {
+      rotate_snake(2, true);
+    }
+  }
+}
+
+void rotate_snake(int player, bool clockwise) {
+  if (snakes[player].control_permitted) {
+    if (clockwise) {
+      snakes[player].direction++;
+      if (snakes[player].direction == 4) {
+        snakes[player].direction = 0;
+      }
+      snakes[player].control_permitted = false;
+    } else {
+      snakes[player].direction--;
+      if (snakes[player].direction == 255) {
+        snakes[player].direction = 3;
+      }
+      snakes[player].control_permitted = false;
+    }
+  }
+}
+
+void single_player_controls() {
+  if (check_button(A_BUTTON, &a_held)) {
+  }
+
+  if (check_button(B_BUTTON, &b_held)) {
+    if (snakes[0].dead) {
+      reset();
+    } else {
+      paused = !paused;
+    }
+  }
+
+  if (paused || snakes[0].dead) {
+    return;
+  }
+
+  if (snakes[0].control_permitted) {
+    if (check_button(LEFT_BUTTON, &left_held)) {
+      if (!(paused || snakes[0].dead)) {
+        if (snakes[0].direction != RIGHT) {
+          snakes[0].direction = LEFT;
+          snakes[0].control_permitted = false;
+        }
+      }
+    }
+  
+    if (check_button(UP_BUTTON, &up_held)) {
+      if (!(paused || snakes[0].dead)) {
+        if (snakes[0].direction != DOWN) {
+          snakes[0].direction = UP;
+          snakes[0].control_permitted = false;
+        }
+      }
+    }
+  
+    if (check_button(RIGHT_BUTTON, &right_held)) {
+      if (!(paused || snakes[0].dead)) {
+        if (snakes[0].direction != LEFT) {
+          snakes[0].direction = RIGHT;
+          snakes[0].control_permitted = false;
+        }
+      }
+    }
+  
+    if (check_button(DOWN_BUTTON, &down_held)) {
+      if (!(paused || snakes[0].dead)) {
+        if (snakes[0].direction != UP) {
+          snakes[0].direction = DOWN;
+          snakes[0].control_permitted = false;
+        }
       }
     }
   }
@@ -144,62 +313,84 @@ bool check_button(unsigned int button, bool *held_ref) {
   } else {
     *held_ref = false;
   }
-  
+
   return false;
 }
 
-void move_snake() {
+void move_snake(int player) {
+  struct Snake snake = snakes[player];
+  if (snake.dead) {
+    return;
+  }
+  struct Block *chunks = snake.chunks;
+  struct Block head = chunks[0];
+  
   for (int i = snake.length - 1; i > 0; i--) {
-    snake.chunks[i].x = snake.chunks[i - 1].x;
-    snake.chunks[i].y = snake.chunks[i - 1].y;
+    struct Block current = chunks[i];
+    struct Block next = chunks[i - 1];
+    current.x = next.x;
+    current.y = next.y;
+    chunks[i] = current;
   }
   
-  switch (direction) {
+  switch (snake.direction) {
     case RIGHT:
-      snake.chunks[0].x = snake.chunks[0].x + 1;
+      head.x++;
       break;
-     case DOWN:
-      snake.chunks[0].y = snake.chunks[0].y + 1;
+    case DOWN:
+      head.y++;
       break;
-     case LEFT:
-      snake.chunks[0].x = snake.chunks[0].x - 1;
+    case LEFT:
+      head.x--;
       break;
-     case UP:
-      snake.chunks[0].y = snake.chunks[0].y - 1;
+    case UP:
+      head.y--;
       break;
   }
 
-  if (snake.chunks[0].x >= MAX_X) {
-    snake.chunks[0].x = 0;
-  } else if (snake.chunks[0].x < 0) {
-    snake.chunks[0].x = MAX_X - 1;
+  if (head.x == MAX_X) {
+    head.x = 0;
+  } else if (head.x == 255) {
+    head.x = MAX_X - 1;
   }
 
-  if (snake.chunks[0].y >= MAX_Y) {
-    snake.chunks[0].y = 0;
-  } else if (snake.chunks[0].y < 0) {
-    snake.chunks[0].y = MAX_Y - 1;
+  if (head.y == MAX_Y) {
+    head.y = 0;
+  } else if (head.y == 255) {
+    head.y = MAX_Y - 1;
   }
+
+  chunks[0] = head;
+  snake.chunks = chunks;
+  snake.control_permitted = true;
+  snakes[player] = snake;
 }
 
-bool snake_collided() {
-  int x = snake.chunks[0].x;
-  int y = snake.chunks[0].y;
-  for (int i = 1; i < snake.length; i++) {
-    if (snake.chunks[i].x == x && snake.chunks[i].y == y) {
-      return true;
+bool snake_collided(int player) {
+  int x = snakes[player].chunks[0].x;
+  int y = snakes[player].chunks[0].y;
+  for (int i = 0; i < number_of_players; i++) {
+    int index = 0;
+    if (i == player) {
+      index = 1;
+    }
+    for (int a = index; a < snakes[i].length; a++) {
+      struct Block chunk = snakes[i].chunks[a];
+      if (chunk.x == x && chunk.y == y) {
+        return true;
+      }
     }
   }
   return false;
 }
 
-bool food_collided() {
-  return snake.chunks[0].x == food.x && snake.chunks[0].y == food.y;
+bool food_collided(int player) {
+  return snakes[player].chunks[0].x == food.x && snakes[player].chunks[0].y == food.y;
 }
 
-void eat_food() {
-  snake.chunks[snake.length] = {snake.chunks[0].x, snake.chunks[0].y};
-  snake.length = snake.length + 1;
+void eat_food(int player) {
+  snakes[player].chunks[snakes[player].length] = {snakes[player].chunks[0].x, snakes[player].chunks[0].y};
+  snakes[player].length = snakes[player].length + 1;
   new_food();
 }
 
@@ -213,10 +404,12 @@ void draw_food() {
   arduboy.fillRect(food.x * BLOCK_WIDTH, food.y * BLOCK_WIDTH, BLOCK_WIDTH, BLOCK_WIDTH, WHITE);
 }
 
-void draw_snake() {
-  for (int i = 0; i < snake.length; i++) {
-    struct block chunk = snake.chunks[i];
-    arduboy.fillRect(chunk.x * BLOCK_WIDTH, chunk.y * BLOCK_WIDTH, BLOCK_WIDTH, BLOCK_WIDTH, WHITE);
+void draw_snakes() {
+  for (int i = 0; i < number_of_players; i++) {
+    for (int a = 0; a < snakes[i].length; a++) {
+      struct Block chunk = snakes[i].chunks[a];
+      arduboy.fillRect(chunk.x * BLOCK_WIDTH, chunk.y * BLOCK_WIDTH, BLOCK_WIDTH, BLOCK_WIDTH, WHITE);
+    }
   }
 }
 
@@ -224,36 +417,55 @@ void draw_interface() {
   if (paused) {
     char *pause_graphic = PAUSE_GRAPHIC;
     draw_graphic(pause_graphic, 32, 16, WIDTH / 2, HEIGHT / 2, true, true);
-  } else if (dead) {
+  } else if (all_players_dead()) {
     char *dead_graphic = DEATH_BOX;
     int x = WIDTH / 2;
     int y = HEIGHT / 2;
     draw_graphic(dead_graphic, 80, 12, x, y, true, true);
     arduboy.setCursor(x - 28, y - 4);
     arduboy.print("Score: ");
-    arduboy.print(snake.length);
+    int score = 0;
+    for (int i = 0; i < number_of_players; i++) {
+      int player_score = snakes[i].length;
+      if (player_score > score) {
+        score = player_score;
+      }
+    }
+    arduboy.print(score);
   }
 }
 
 void reset() {
-  snake.length = INITIAL_LENGTH;
-  dead = false;
-  //TODO: position in multiplayer
-}
+  int x = 4;
+  int y = 4;
+  for (int i = 0; i < number_of_players; i++) {
+    struct Snake snake = snakes[i];
+    snake.length = INITIAL_LENGTH;
+    snake.direction = RIGHT;
+    snake.dead = false;
+    struct Block *chunks = snake.chunks;
+    for (int a = 0; a < snake.length; a++) {
+      chunks[a] = {x, y};
+    }
 
-void lose() {
-  dead = true;
+    snake.chunks = chunks;
+    snakes[i] = snake;
+    
+    x += 4;
+    y += 4;
+  }
+  new_food();
 }
 
 void draw_graphic(char * graphic, int size_x, int size_y, unsigned int x, unsigned int y, bool origin_center, bool blank) {
-    char *pause_graphic = PAUSE_GRAPHIC;
-    if (origin_center) {
-      x = x - size_x / 2;
-      y = y - size_y / 2;
-    }
-    if (blank) {
-      arduboy.fillRect(x, y, size_x, size_y, BLACK);
-    }
-    arduboy.drawBitmap(x, y, graphic, size_x, size_y, WHITE);
+  char *pause_graphic = PAUSE_GRAPHIC;
+  if (origin_center) {
+    x = x - size_x / 2;
+    y = y - size_y / 2;
+  }
+  if (blank) {
+    arduboy.fillRect(x, y, size_x, size_y, BLACK);
+  }
+  arduboy.drawBitmap(x, y, graphic, size_x, size_y, WHITE);
 }
 
