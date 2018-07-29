@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 2,
+  "title": "ArduSnake",
+  "description": "A Snake game for the Arduboy with adjustable speed and local multiplayer!",
+  "author": "Chootin",
+  "version": "1.0",
+  "date": "2018-07-29",
+  "genre": "Arcade",
+  "url": "https://github.com/Chootin/ArduSnake",
+  "sourceUrl": "https://github.com/Chootin/ArduSnake",
+  "banner": "banner.png",
+  "screenshots": [
+    {
+      "title": "Title Screen",
+      "filename": "title_screen.png"
+    }
+  ],
+  "binaries": [
+    {
+      "title": "ArduSnake v1.0",
+      "filename": "ArduSnake_v1.hex",
+      "device": "Arduboy"
+    }
+  ],
+  "buttons": [
+  ]
+}
