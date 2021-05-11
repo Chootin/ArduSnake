@@ -435,9 +435,33 @@ void eat_food(int player) {
 }
 
 void new_food() {
-  unsigned int x = random(0, MAX_X);
-  unsigned int y = random(0, MAX_Y);
+  unsigned int x;
+  unsigned int y;
+  
+  while (true) {
+    x = random(0, MAX_X);
+    y = random(0, MAX_Y);
+
+    if (!block_occupied(x, y)) {
+      break;
+    }
+  }
+  
   food = {x, y};
+}
+
+bool block_occupied(int x, int y) {
+  for (int i = 0; i < number_of_players; i++) {
+    struct Snake snake = snakes[i];
+    for (int s = 0; s < snake.length; s++) {
+      struct Block chunk = snake.chunks[s];
+      if (chunk.x == x && chunk.y == y) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
 }
 
 void draw_food() {
