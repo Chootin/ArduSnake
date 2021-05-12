@@ -12,10 +12,17 @@
 #define MAX_PLAYERS 3
 #define MAX_SPEED 3
 #define BEEP_FREQ 1046.5
+#define DEAD_FREQ 739.99
 
 struct Block {
   byte x;
   byte y;
+};
+
+struct StartConditions {
+  byte x;
+  byte y;
+  byte direction;
 };
 
 struct Snake {
@@ -31,12 +38,13 @@ const unsigned char TITLE_SCREEN_RIGHT[] PROGMEM = {0x80, 0x00, 0x00, 0x00, 0x00
 const unsigned char PAUSE_GRAPHIC[] PROGMEM = {0xff, 0x3, 0x1, 0x1, 0xe1, 0xa1, 0xe1, 0x1, 0xe1, 0xa1, 0xe1, 0x1, 0xe1, 0x1, 0xe1, 0x1, 0xe1, 0xa1, 0xa1, 0x1, 0xe1, 0xa1, 0xa1, 0x1, 0xe1, 0x21, 0x21, 0xc1, 0x1, 0x1, 0x3, 0xff, 0xff, 0xc0, 0x80, 0x80, 0x87, 0x80, 0x80, 0x80, 0x87, 0x80, 0x87, 0x80, 0x87, 0x84, 0x87, 0x80, 0x84, 0x84, 0x87, 0x80, 0x87, 0x84, 0x84, 0x80, 0x87, 0x84, 0x84, 0x83, 0x80, 0x80, 0xc0, 0xff};
 const unsigned char DEATH_BOX[] PROGMEM = {0xfe, 0x1, 0xf1, 0x5d, 0xcd, 0xbd, 0xcd, 0x5d, 0xf1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0x1, 0xfe, 0xff, 0x00, 0x8, 0xb, 0xa, 0xa, 0xa, 0xb, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x8, 0x00, 0xff, 0x3f, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40, 0x3f};
 
+const StartConditions player_start_conditions[3] = {{1, 1, RIGHT}, {MAX_X - 1, MAX_Y / 2, LEFT}, {1, MAX_Y - 1, RIGHT}};
+
 Arduboy2 arduboy;
 BeepPin1 beep1;
 struct Snake *snakes;
 struct Block food;
 bool paused = false;
-bool left_held = false, up_held = false, right_held = false, down_held = false, a_held = false, b_held = false;
 byte number_of_players = 1;
 byte game_speed = 3;
 uint8_t tone_length = 5;
@@ -100,12 +108,14 @@ void title_screen() {
     if (!arduboy.nextFrame()) {
       continue;
     }
+
+    Arduboy2Base::pollButtons();
     
     beep1.timer();
 
     bool button_pressed = false;
     
-    if (check_button(B_BUTTON, &b_held)) {
+    if (Arduboy2Base::justPressed(B_BUTTON)) {
       switch (current_option) {
         case 0:
           play_selected = true;
@@ -126,13 +136,13 @@ void title_screen() {
       button_pressed = true;
     }
 
-    if (check_button(DOWN_BUTTON, &down_held)) {
+    if (Arduboy2Base::justPressed(DOWN_BUTTON)) {
       current_option = (current_option + 1) % 3;
       button_pressed = true;
       beep1.tone(beep1.freq(BEEP_FREQ), tone_length);
     }
 
-    if (check_button(UP_BUTTON, &up_held)) {
+    if (Arduboy2Base::justPressed(UP_BUTTON)) {
       current_option--;
       if (current_option < 0) {
         current_option = 2;
@@ -192,7 +202,12 @@ void loop() {
 
     for (int i = 0; i < number_of_players; i++) {
       if (snake_collided(i)) {
-        snakes[i].dead = true;
+        beep1.tone(beep1.freq(DEAD_FREQ), tone_length * 2);
+        if (number_of_players == 1) {
+          snakes[i].dead = true; 
+        } else {
+          spawn_snake(i);
+        }
       } else if (food_collided(i)) {
         eat_food(i);
       }
@@ -224,14 +239,15 @@ void process_input() {
 }
 
 void multiplayer_controls() {
+  Arduboy2Base::pollButtons();
   //Snake 1
-  if (check_button(A_BUTTON, &a_held)) {
+  if (Arduboy2Base::justPressed(LEFT_BUTTON)) {
     if (!snakes[0].dead) {
       rotate_snake(0, false);
     }
   }
 
-  if (check_button(B_BUTTON, &b_held)) {
+  if (Arduboy2Base::justPressed(RIGHT_BUTTON)) {
     if (all_players_dead()) {
       reset();
     } else if (!snakes[0].dead) {
@@ -244,26 +260,26 @@ void multiplayer_controls() {
   }
 
   //Snake 2
-  if (check_button(LEFT_BUTTON, &left_held)) {
+  if (Arduboy2Base::justPressed(A_BUTTON)) {
     if (!snakes[1].dead) {
       rotate_snake(1, false);
     }
   }
 
-  if (check_button(UP_BUTTON, &up_held)) {
+  if (Arduboy2Base::justPressed(B_BUTTON)) {
     if (!snakes[1].dead) {
       rotate_snake(1, true);
     }
   }
 
   //Snake 3
-  if (check_button(RIGHT_BUTTON, &right_held)) {
+  if (Arduboy2Base::justPressed(UP_BUTTON)) {
     if (!snakes[2].dead) {
       rotate_snake(2, false);
     }
   }
 
-  if (check_button(DOWN_BUTTON, &down_held)) {
+  if (Arduboy2Base::justPressed(DOWN_BUTTON)) {
     if (!snakes[2].dead) {
       rotate_snake(2, true);
     }
@@ -289,10 +305,13 @@ void rotate_snake(int player, bool clockwise) {
 }
 
 void single_player_controls() {
-  if (check_button(A_BUTTON, &a_held)) {
+  Arduboy2Base::pollButtons();
+  /*
+  if (Arduboy2Base::justPressed(A_BUTTON)) {
   }
+  */
 
-  if (check_button(B_BUTTON, &b_held)) {
+  if (Arduboy2Base::justPressed(B_BUTTON)) {
     if (snakes[0].dead) {
       reset();
     } else {
@@ -305,7 +324,7 @@ void single_player_controls() {
   }
 
   if (snakes[0].control_permitted) {
-    if (check_button(LEFT_BUTTON, &left_held)) {
+    if (Arduboy2Base::justPressed(LEFT_BUTTON)) {
       if (!(paused || snakes[0].dead)) {
         if (snakes[0].direction != RIGHT) {
           snakes[0].direction = LEFT;
@@ -314,7 +333,7 @@ void single_player_controls() {
       }
     }
   
-    if (check_button(UP_BUTTON, &up_held)) {
+    if (Arduboy2Base::justPressed(UP_BUTTON)) {
       if (!(paused || snakes[0].dead)) {
         if (snakes[0].direction != DOWN) {
           snakes[0].direction = UP;
@@ -323,7 +342,7 @@ void single_player_controls() {
       }
     }
   
-    if (check_button(RIGHT_BUTTON, &right_held)) {
+    if (Arduboy2Base::justPressed(RIGHT_BUTTON)) {
       if (!(paused || snakes[0].dead)) {
         if (snakes[0].direction != LEFT) {
           snakes[0].direction = RIGHT;
@@ -332,7 +351,7 @@ void single_player_controls() {
       }
     }
   
-    if (check_button(DOWN_BUTTON, &down_held)) {
+    if (Arduboy2Base::justPressed(DOWN_BUTTON)) {
       if (!(paused || snakes[0].dead)) {
         if (snakes[0].direction != UP) {
           snakes[0].direction = DOWN;
@@ -341,19 +360,6 @@ void single_player_controls() {
       }
     }
   }
-}
-
-bool check_button(unsigned int button, bool *held_ref) {
-  if (arduboy.pressed(button)) {
-    if (!*held_ref) {
-      *held_ref = true;
-      return true;
-    }
-  } else {
-    *held_ref = false;
-  }
-
-  return false;
 }
 
 void move_snake(int player) {
@@ -502,26 +508,28 @@ void draw_interface() {
   }
 }
 
-void reset() {
-  int x = 4;
-  int y = 4;
+void reset() {  
   for (int i = 0; i < number_of_players; i++) {
-    struct Snake snake = snakes[i];
-    snake.length = INITIAL_LENGTH;
-    snake.direction = RIGHT;
-    snake.dead = false;
-    struct Block *chunks = snake.chunks;
-    for (int a = 0; a < snake.length; a++) {
-      chunks[a] = {x, y};
-    }
-
-    snake.chunks = chunks;
-    snakes[i] = snake;
-    
-    x += 4;
-    y += 4;
+    spawn_snake(i);
   }
+  
   new_food();
+}
+
+void spawn_snake(int player) {
+  struct StartConditions start_condition = player_start_conditions[player];
+  struct Snake snake = snakes[player];
+  
+  snake.length = INITIAL_LENGTH;
+  snake.direction = start_condition.direction;
+  snake.dead = false;
+  struct Block *chunks = snake.chunks;
+  for (int a = 0; a < snake.length; a++) {
+    chunks[a] = {start_condition.x, start_condition.y};
+  }
+
+  snake.chunks = chunks;
+  snakes[player] = snake;
 }
 
 void draw_graphic(char * graphic, int size_x, int size_y, unsigned int x, unsigned int y, bool origin_center, bool blank) {
