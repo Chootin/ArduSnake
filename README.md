@@ -19,7 +19,7 @@ Press the B button to pause the game.
 ### Multiplayer
 Each player gets two of the buttons on the Arduboy - one to rotate clockwise and one to rotate counter-clockwise.
 
-The button pairs are Left and Up, Down and Right, A and B.
-Left, Down and A rotate the snake counter-clockwise and Up, Right and B rotate the snake clockwise.
+The button pairs are A and B, Left and Right and Up and Down.
+A, Left and Up rotate their respective snakes counter-clockwise (left) and B, Right and Down rotate their snakes clockwise (right).
 
-When a snake runs into another snake it loses, it's pieces remain on the board, don't run into them!
+When a snake runs into another it will respawn at it's starting location.
