@@ -206,17 +206,31 @@ void loop() {
       move_snake(i);
     }
 
+    bool any_player_killed = false;
+    bool player_killed[number_of_players];
+
     for (int i = 0; i < number_of_players; i++) {
-      if (snake_collided(i)) {
-        beep1.tone(beep1.freq(DEAD_FREQ), tone_length * 2);
+      player_killed[i] = snake_collided(i);
+      
+      if (food_collided(i)) {
+        eat_food(i);
+      }
+    }
+
+    for (int i = 0; i < number_of_players; i++) {
+      if (player_killed[i]) {
+        any_player_killed = true;
+        
         if (number_of_players == 1) {
-          snakes[i].dead = true; 
+          snakes[i].dead = true;
         } else {
           spawn_snake(i);
         }
-      } else if (food_collided(i)) {
-        eat_food(i);
       }
+    }
+
+    if (any_player_killed) {
+        beep1.tone(beep1.freq(DEAD_FREQ), tone_length * 2);
     }
   }
   
