@@ -308,15 +308,17 @@ void multiplayer_controls() {
   }
 
   //Snake 3
-  if (Arduboy2Base::justPressed(UP_BUTTON)) {
-    if (!snakes[2].dead) {
-      rotate_snake(2, false);
+  if (number_of_players > 2) {
+    if (Arduboy2Base::justPressed(UP_BUTTON)) {
+      if (!snakes[2].dead) {
+        rotate_snake(2, false);
+      }
     }
-  }
-
-  if (Arduboy2Base::justPressed(DOWN_BUTTON)) {
-    if (!snakes[2].dead) {
-      rotate_snake(2, true);
+  
+    if (Arduboy2Base::justPressed(DOWN_BUTTON)) {
+      if (!snakes[2].dead) {
+        rotate_snake(2, true);
+      }
     }
   }
 }
