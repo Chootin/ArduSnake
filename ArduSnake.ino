@@ -55,11 +55,27 @@ byte number_of_players = 1;
 byte game_speed = 3;
 uint8_t tone_length = 5;
 
+bool snakes_allocated = false;
+
 void setup() {
   arduboy.begin();
   arduboy.initRandomSeed();
   
   beep1.begin();
+
+  handle_title_screen();
+}
+
+void handle_title_screen() {
+  if (snakes_allocated) {
+    for (int i = 0; i < number_of_players; i++) {
+      delete snakes[i].chunks;
+    }
+    
+    delete snakes;
+    
+    snakes_allocated = false;
+  }
 
   uint8_t framerate = 20;
   
@@ -83,13 +99,17 @@ void setup() {
   }
   arduboy.setFrameRate(framerate);
   set_tone_length(framerate);
-  
+
   snakes = (struct Snake *) malloc(sizeof(struct Snake) * number_of_players);
+  
   for (int i = 0; i < number_of_players; i++) {
     struct Block *chunks = (struct Block *) malloc(sizeof(struct Block) * MAX_SNAKE);
     struct Snake snake = {chunks, INITIAL_LENGTH, RIGHT, false, true};
     snakes[i] = snake;
   }
+  
+  snakes_allocated = true;
+  
   reset();
 }
 
@@ -260,6 +280,7 @@ void process_input() {
 
 void multiplayer_controls() {
   Arduboy2Base::pollButtons();
+  
   //Snake 1
   if (Arduboy2Base::justPressed(LEFT_BUTTON)) {
     if (!snakes[0].dead) {
@@ -268,15 +289,9 @@ void multiplayer_controls() {
   }
 
   if (Arduboy2Base::justPressed(RIGHT_BUTTON)) {
-    if (all_players_dead()) {
-      reset();
-    } else if (!snakes[0].dead) {
+    if (!snakes[0].dead) {
       rotate_snake(0, true);
     }
-  }
-
-  if (paused || all_players_dead()) {
-    return;
   }
 
   //Snake 2
@@ -326,14 +341,11 @@ void rotate_snake(int player, bool clockwise) {
 
 void single_player_controls() {
   Arduboy2Base::pollButtons();
-  /*
-  if (Arduboy2Base::justPressed(A_BUTTON)) {
-  }
-  */
 
-  if (Arduboy2Base::justPressed(B_BUTTON)) {
+  if (Arduboy2Base::justPressed(A_BUTTON) ||
+      Arduboy2Base::justPressed(B_BUTTON)) {
     if (snakes[0].dead) {
-      reset();
+      handle_title_screen();
     } else {
       paused = !paused;
     }
